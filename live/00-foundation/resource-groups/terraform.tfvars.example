@@ -1,41 +1,12 @@
+tenant_id       = "00000000-0000-0000-0000-000000000000"
+subscription_id = "00000000-0000-0000-0000-000000000000"
 common_tags = {
-  project     = "azure-landing-zone-asr-runbook-ent"
-  environment = "dr"
-  owner       = "cloud-team"
+  company     = "samsunglife"
   managed_by  = "terraform"
+  itsm_ticket = "CSR-EXAMPLE"
 }
-
 resource_groups = {
-  dr_hub = {
-    name     = "rg-sl-dr-hub-jpe"
-    location = "japaneast"
-    tags = {
-      region_role = "dr"
-      workload    = "platform"
-    }
-  }
-  dr_sales_prod = {
-    name     = "rg-sl-sales-prod-dr-jpe"
-    location = "japaneast"
-    tags = {
-      region_role = "dr"
-      workload    = "sales"
-    }
-  }
-  dr_asr = {
-    name     = "rg-sl-dr-asr-jpe"
-    location = "japaneast"
-    tags = {
-      region_role = "dr"
-      workload    = "asr"
-    }
-  }
-  dr_automation = {
-    name     = "rg-sl-dr-automation-jpe"
-    location = "japaneast"
-    tags = {
-      region_role = "dr"
-      workload    = "automation"
-    }
-  }
+  hub = { name = "rg-sl-hub-krc", location = "koreacentral", tags = { env = "platform" } }
+  sales_dev = { name = "rg-sl-sales-dev", location = "koreacentral", tags = { department = "sales", env = "dev" } }
+  sales_ai = { name = "rg-sl-sales-ai-sandbox", location = "koreacentral", tags = { department = "sales", env = "sandbox" } }
 }

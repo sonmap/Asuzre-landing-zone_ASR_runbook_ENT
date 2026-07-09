@@ -3,5 +3,5 @@ resource "azurerm_resource_group" "this" {
 
   name     = each.value.name
   location = each.value.location
-  tags     = merge(var.tags, try(each.value.tags, {}))
+  tags     = merge(var.common_tags, each.value.tags)
 }

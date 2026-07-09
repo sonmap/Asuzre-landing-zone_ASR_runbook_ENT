@@ -1,5 +1,5 @@
 variable "resource_groups" {
-  description = "Resource Groups to create"
+  description = "Map of resource groups to create."
   type = map(object({
     name     = string
     location = string
@@ -7,8 +7,7 @@ variable "resource_groups" {
   }))
 }
 
-variable "tags" {
-  description = "Common tags"
-  type        = map(string)
-  default     = {}
+variable "common_tags" {
+  type    = map(string)
+  default = {}
 }

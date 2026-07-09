@@ -7,18 +7,5 @@ param(
 
 Write-Output "[DR-DNS-SWITCH] Start"
 Connect-AzAccount -Identity
-
-$zone = Get-AzPrivateDnsZone -ResourceGroupName $DnsResourceGroupName -Name $PrivateDnsZoneName -ErrorAction SilentlyContinue
-if (-not $zone) {
-  throw "Private DNS Zone not found: $PrivateDnsZoneName"
-}
-
-$record = Get-AzPrivateDnsRecordSet -ResourceGroupName $DnsResourceGroupName -ZoneName $PrivateDnsZoneName -Name $RecordName -RecordType A -ErrorAction SilentlyContinue
-if ($record) {
-  Remove-AzPrivateDnsRecordSet -ResourceGroupName $DnsResourceGroupName -ZoneName $PrivateDnsZoneName -Name $RecordName -RecordType A -Force
-}
-
-New-AzPrivateDnsRecordSet -ResourceGroupName $DnsResourceGroupName -ZoneName $PrivateDnsZoneName -Name $RecordName -RecordType A -Ttl 60 -PrivateDnsRecords (New-AzPrivateDnsRecordConfig -IPv4Address $DrIpAddress)
-
-Write-Output "DNS switched: $RecordName.$PrivateDnsZoneName -> $DrIpAddress"
-Write-Output "[DR-DNS-SWITCH] Completed"
+Write-Output "Switch $RecordName.$PrivateDnsZoneName to $DrIpAddress"
+Write-Output "[TODO] Add Private DNS record update logic after actual DNS zone is confirmed."
