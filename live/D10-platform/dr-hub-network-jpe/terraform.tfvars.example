@@ -1,0 +1,34 @@
+location            = "japaneast"
+resource_group_name = "rg-sl-dr-hub-jpe"
+vnet_name           = "vnet-sl-dr-hub-jpe"
+address_space       = ["10.110.0.0/16"]
+dns_servers         = []
+
+common_tags = {
+  project     = "azure-landing-zone-asr-runbook-ent"
+  environment = "dr"
+  region_role = "dr"
+  workload    = "platform"
+  managed_by  = "terraform"
+}
+
+subnets = {
+  firewall = {
+    name                  = "AzureFirewallSubnet"
+    address_prefixes      = ["10.110.0.0/24"]
+    create_nsg            = false
+    associate_route_table = false
+  }
+  dns_shared = {
+    name                  = "snet-dns-shared"
+    address_prefixes      = ["10.110.1.0/24"]
+    create_nsg            = true
+    associate_route_table = false
+  }
+  mgmt = {
+    name                  = "snet-mgmt"
+    address_prefixes      = ["10.110.2.0/24"]
+    create_nsg            = true
+    associate_route_table = false
+  }
+}
