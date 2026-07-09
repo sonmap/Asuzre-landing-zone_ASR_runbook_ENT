@@ -1,0 +1,38 @@
+location                = "japaneast"
+resource_group_name     = "rg-sl-dr-automation-jpe"
+automation_account_name = "aa-sl-dr-runbook-jpe"
+
+common_tags = {
+  project     = "azure-landing-zone-asr-runbook-ent"
+  environment = "dr"
+  region_role = "dr"
+  workload    = "automation"
+  managed_by  = "terraform"
+}
+
+runbooks = {
+  precheck = {
+    name         = "dr-precheck"
+    description  = "DR failover pre-check runbook"
+    runbook_type = "PowerShell"
+    script_path  = "../../../runbooks/dr-precheck.ps1"
+  }
+  health_check = {
+    name         = "dr-health-check"
+    description  = "DR VM and service health check runbook"
+    runbook_type = "PowerShell"
+    script_path  = "../../../runbooks/dr-health-check.ps1"
+  }
+  dns_switch = {
+    name         = "dr-dns-switch"
+    description  = "Switch Private DNS records to DR endpoints"
+    runbook_type = "PowerShell"
+    script_path  = "../../../runbooks/dr-dns-switch.ps1"
+  }
+  inventory_update = {
+    name         = "dr-inventory-update"
+    description  = "Export DR inventory after failover"
+    runbook_type = "PowerShell"
+    script_path  = "../../../runbooks/dr-inventory-update.ps1"
+  }
+}
