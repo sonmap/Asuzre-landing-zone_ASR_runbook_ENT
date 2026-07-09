@@ -1,0 +1,319 @@
+name: Reset from source and add DR ASR structure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reset-from-source-add-dr.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  reset-and-extend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone source repository
+        run: |
+          rm -rf /tmp/source-lz
+          git clone --depth 1 https://github.com/sonmap/azure-landing-zone_test04_ENT.git /tmp/source-lz
+
+      - name: Reset target content from source repository
+        run: |
+          # Keep .git and this workflow, replace repository content with source content.
+          find . -mindepth 1 \
+            ! -path './.git' \
+            ! -path './.git/*' \
+            ! -path './.github' \
+            ! -path './.github/workflows' \
+            ! -path './.github/workflows/reset-from-source-add-dr.yml' \
+            -exec rm -rf {} +
+
+          rsync -a --delete \
+            --exclude '.git' \
+            --exclude '.github/workflows/reset-from-source-add-dr.yml' \
+            /tmp/source-lz/ ./
+
+          mkdir -p .github/workflows
+
+      - name: Add DR D-prefix roots and ASR operations areas
+        run: |
+          mkdir -p \
+            live/D00-foundation/resource-groups \
+            live/D10-platform/dr-hub-network-jpe \
+            live/D20-workload/dr-sales-prod-spoke-jpe \
+            live/D30-services/dr-vm-placeholder \
+            live/D40-access/dr-private-dns-records \
+            live/50-asr/recovery-vault-jpe \
+            live/50-asr/asr-sales-prod \
+            live/50-asr/recovery-plan-sales-prod \
+            live/60-operations/automation-dr \
+            live/60-operations/inventory \
+            modules/recovery_services_vault \
+            modules/automation_runbook \
+            runbooks
+
+          cat > docs/REPOSITORY_REDESIGN.md <<'EOF'
+          # Repository Redesign: 기존 Landing Zone + D-prefix DR 확장
+
+          본 저장소는 `azure-landing-zone_test04_ENT`를 원본으로 복사한 뒤 DR/ASR 영역을 추가한다.
+
+          ## 번호 체계
+
+          | 구분 | Prefix | 역할 |
+          |---|---:|---|
+          | 주센터 Foundation | `00` | 기존 Resource Group |
+          | 주센터 Platform | `10` | 기존 Hub Network / Platform |
+          | 주센터 Workload | `20` | 기존 업무 Spoke |
+          | 주센터 Service | `30` | 기존 VM / AKS / LB |
+          | 주센터 Access | `40` | 기존 DNS / PE / Rule |
+          | DR Foundation | `D00` | DR Resource Group |
+          | DR Platform | `D10` | DR Hub Network |
+          | DR Workload | `D20` | DR 업무 Spoke |
+          | DR Service Placeholder | `D30` | ASR Failover 대상 Placeholder |
+          | DR Access | `D40` | DR DNS / PE / Rule |
+          | ASR Control | `50-asr` | Vault / Policy / Recovery Plan |
+          | Operations | `60-operations` | Runbook / Inventory / Monitor |
+
+          ## 원칙
+
+          - 기존 `00~40`은 주센터 영역으로 유지한다.
+          - DR 영역은 `D00~D40`으로 분리한다.
+          - ASR와 Recovery Plan은 `50-asr`에서 관리한다.
+          - Runbook, Inventory, Monitor는 `60-operations`에서 관리한다.
+          - DR VM은 평상시 Terraform으로 생성하지 않고 ASR Failover 시 생성한다.
+          EOF
+
+          cat > live/D00-foundation/resource-groups/README.md <<'EOF'
+          # D00-foundation / resource-groups
+
+          DR센터 Foundation 영역이다.
+
+          - `rg-sl-dr-hub-jpe`
+          - `rg-sl-sales-prod-dr-jpe`
+          - `rg-sl-dr-asr-jpe`
+          - `rg-sl-dr-automation-jpe`
+          - `rg-sl-dr-inventory-jpe`
+          EOF
+
+          cat > live/D10-platform/dr-hub-network-jpe/README.md <<'EOF'
+          # D10-platform / dr-hub-network-jpe
+
+          DR센터 Japan East Hub Network 영역이다.
+
+          | 항목 | 값 |
+          |---|---|
+          | Region | Japan East |
+          | Resource Group | `rg-sl-dr-hub-jpe` |
+          | VNet | `vnet-sl-dr-hub-jpe` |
+          | CIDR | `10.110.0.0/16` |
+
+          ## Subnet
+
+          | Subnet | CIDR |
+          |---|---|
+          | `AzureFirewallSubnet` | `10.110.0.0/24` |
+          | `snet-dns-shared` | `10.110.1.0/24` |
+          | `snet-mgmt` | `10.110.2.0/24` |
+          EOF
+
+          cat > live/D20-workload/dr-sales-prod-spoke-jpe/README.md <<'EOF'
+          # D20-workload / dr-sales-prod-spoke-jpe
+
+          DR센터 Japan East 업무 Spoke Network 영역이다.
+
+          | 항목 | 값 |
+          |---|---|
+          | Region | Japan East |
+          | Resource Group | `rg-sl-sales-prod-dr-jpe` |
+          | VNet | `vnet-sl-sales-prod-dr-jpe` |
+          | CIDR | `10.120.0.0/16` |
+
+          ## Subnet Mapping
+
+          | 주센터 | DR센터 |
+          |---|---|
+          | `snet-web` `10.20.0.0/24` | `snet-web` `10.120.0.0/24` |
+          | `snet-was` `10.20.1.0/24` | `snet-was` `10.120.1.0/24` |
+          | `snet-db` `10.20.2.0/24` | `snet-db` `10.120.2.0/24` |
+          | `snet-pe` `10.20.3.0/24` | `snet-pe` `10.120.3.0/24` |
+          | `snet-agent` `10.20.4.0/24` | `snet-agent` `10.120.4.0/24` |
+          EOF
+
+          cat > live/D30-services/dr-vm-placeholder/README.md <<'EOF'
+          # D30-services / dr-vm-placeholder
+
+          DR VM은 평상시 생성하지 않는다.
+          ASR Failover 시 `D20`의 DR VNet/Subnet에 VM이 생성된다.
+
+          이 영역은 Source VM과 Target Subnet Mapping, DR Naming Rule, Failover 후 Inventory 비교 기준을 문서화한다.
+          EOF
+
+          cat > live/D40-access/dr-private-dns-records/README.md <<'EOF'
+          # D40-access / dr-private-dns-records
+
+          DR DNS 전환, Private DNS Record, Private Endpoint, Firewall Rule 기준을 관리한다.
+
+          장애 시 `dr-dns-switch` Runbook이 DR IP로 DNS를 전환한다.
+          EOF
+
+          cat > modules/recovery_services_vault/main.tf <<'EOF'
+          resource "azurerm_recovery_services_vault" "this" {
+            name                = var.name
+            location            = var.location
+            resource_group_name = var.resource_group_name
+            sku                 = var.sku
+            soft_delete_enabled = var.soft_delete_enabled
+            tags                = var.tags
+          }
+          EOF
+
+          cat > modules/recovery_services_vault/variables.tf <<'EOF'
+          variable "name" { type = string }
+          variable "location" { type = string }
+          variable "resource_group_name" { type = string }
+          variable "sku" { type = string, default = "Standard" }
+          variable "soft_delete_enabled" { type = bool, default = true }
+          variable "tags" { type = map(string), default = {} }
+          EOF
+
+          cat > modules/recovery_services_vault/outputs.tf <<'EOF'
+          output "vault_id" { value = azurerm_recovery_services_vault.this.id }
+          output "vault_name" { value = azurerm_recovery_services_vault.this.name }
+          EOF
+
+          cat > live/50-asr/recovery-vault-jpe/README.md <<'EOF'
+          # 50-asr / recovery-vault-jpe
+
+          Recovery Services Vault 생성 영역이다.
+
+          - Resource Group: `rg-sl-dr-asr-jpe`
+          - Vault: `rsv-sl-asr-jpe`
+          - Region: Japan East
+          EOF
+
+          cat > live/50-asr/asr-sales-prod/README.md <<'EOF'
+          # 50-asr / asr-sales-prod
+
+          Sales Prod VM을 ASR 보호 대상으로 등록하는 영역이다.
+
+          실제 ASR Terraform 리소스는 Source VM ID, Target VNet/Subnet ID, Vault Fabric/Container, Cache Storage Account 확정 후 추가한다.
+          EOF
+
+          cat > live/50-asr/recovery-plan-sales-prod/README.md <<'EOF'
+          # 50-asr / recovery-plan-sales-prod
+
+          Recovery Plan 순서:
+
+          1. Pre Action: `dr-precheck`
+          2. Group 1: DB VM
+          3. Group 2: WAS VM
+          4. Group 3: WEB VM
+          5. Final Action: `dr-dns-switch`, `dr-inventory-update`
+          EOF
+
+          cat > runbooks/dr-precheck.ps1 <<'EOF'
+          param(
+            [string]$ResourceGroupName = "rg-sl-sales-prod-dr-jpe",
+            [string]$VaultResourceGroupName = "rg-sl-dr-asr-jpe",
+            [string]$VaultName = "rsv-sl-asr-jpe"
+          )
+
+          Write-Output "[DR-PRECHECK] Start"
+          Connect-AzAccount -Identity
+          Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop | Out-Null
+          Get-AzRecoveryServicesVault -ResourceGroupName $VaultResourceGroupName -Name $VaultName -ErrorAction Stop | Out-Null
+          Write-Output "[DR-PRECHECK] Completed"
+          EOF
+
+          cat > runbooks/dr-health-check.ps1 <<'EOF'
+          param([string]$ResourceGroupName = "rg-sl-sales-prod-dr-jpe")
+          Write-Output "[DR-HEALTH-CHECK] Start"
+          Connect-AzAccount -Identity
+          Get-AzVM -ResourceGroupName $ResourceGroupName -Status | Select-Object Name, PowerState
+          Write-Output "[DR-HEALTH-CHECK] Completed"
+          EOF
+
+          cat > runbooks/dr-dns-switch.ps1 <<'EOF'
+          param(
+            [string]$DnsResourceGroupName = "rg-sl-dr-hub-jpe",
+            [string]$PrivateDnsZoneName = "corp.internal",
+            [string]$RecordName = "sales",
+            [string]$DrIpAddress = "10.120.0.10"
+          )
+
+          Write-Output "[DR-DNS-SWITCH] Start"
+          Connect-AzAccount -Identity
+          Write-Output "Switch $RecordName.$PrivateDnsZoneName to $DrIpAddress"
+          Write-Output "[TODO] Add Private DNS record update logic after actual DNS zone is confirmed."
+          EOF
+
+          cat > runbooks/dr-inventory-update.ps1 <<'EOF'
+          param([string]$ResourceGroupName = "rg-sl-sales-prod-dr-jpe")
+          Write-Output "[DR-INVENTORY-UPDATE] Start"
+          Connect-AzAccount -Identity
+          Get-AzResource -ResourceGroupName $ResourceGroupName | ConvertTo-Json -Depth 10
+          Write-Output "[DR-INVENTORY-UPDATE] Completed"
+          EOF
+
+          cat > live/60-operations/inventory/README.md <<'EOF'
+          # 60-operations / inventory
+
+          Azure Resource Graph 기반 Inventory / CMDB Export 영역이다.
+          EOF
+
+          cat > docs/DR_RUNBOOK.md <<'EOF'
+          # DR Runbook
+
+          ## Recovery Plan 연계 Runbook
+
+          | Runbook | 목적 |
+          |---|---|
+          | `dr-precheck` | DR 전 사전 점검 |
+          | `dr-health-check` | VM/서비스 상태 점검 |
+          | `dr-dns-switch` | DNS 전환 |
+          | `dr-inventory-update` | Inventory / CMDB 갱신 |
+          EOF
+
+          cat >> README.md <<'EOF'
+
+          ---
+
+          ## DR / ASR 확장 구조
+
+          이 저장소는 원본 `azure-landing-zone_test04_ENT`를 기준으로 복사한 뒤 아래 영역을 추가한다.
+
+          | 구분 | 경로 | 설명 |
+          |---|---|---|
+          | DR Foundation | `live/D00-foundation` | DR Resource Group |
+          | DR Platform | `live/D10-platform` | DR Hub Network |
+          | DR Workload | `live/D20-workload` | DR Spoke VNet/Subnet |
+          | DR Service Placeholder | `live/D30-services` | ASR Failover 대상 Placeholder |
+          | DR Access | `live/D40-access` | DR DNS / PE / Rule |
+          | ASR | `live/50-asr` | Vault / Policy / Recovery Plan |
+          | Operations | `live/60-operations` | Runbook / Inventory |
+          EOF
+
+      - name: Commit reset and DR extension
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Reset from source landing zone and add DR ASR runbook areas"
+            git push
+          fi
