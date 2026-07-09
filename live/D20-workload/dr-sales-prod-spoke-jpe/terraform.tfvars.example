@@ -1,0 +1,55 @@
+location            = "japaneast"
+resource_group_name = "rg-sl-sales-prod-dr-jpe"
+vnet_name           = "vnet-sl-sales-prod-dr-jpe"
+address_space       = ["10.120.0.0/16"]
+dns_servers         = []
+
+# Fill this value from D10 output:
+# terraform -chdir=live/D10-platform/dr-hub-network-jpe output -raw dr_hub_vnet_id
+dr_hub_vnet_id              = "<DR_HUB_VNET_ID>"
+dr_hub_resource_group_name  = "rg-sl-dr-hub-jpe"
+dr_hub_vnet_name            = "vnet-sl-dr-hub-jpe"
+dr_firewall_private_ip      = null
+
+common_tags = {
+  project      = "azure-landing-zone-asr-runbook-ent"
+  environment  = "dr"
+  region_role  = "dr"
+  workload     = "sales"
+  dr_protected = "true"
+  managed_by   = "terraform"
+}
+
+subnets = {
+  web = {
+    name                  = "snet-web"
+    address_prefixes      = ["10.120.0.0/24"]
+    create_nsg            = true
+    associate_route_table = true
+  }
+  was = {
+    name                  = "snet-was"
+    address_prefixes      = ["10.120.1.0/24"]
+    create_nsg            = true
+    associate_route_table = true
+  }
+  db = {
+    name                  = "snet-db"
+    address_prefixes      = ["10.120.2.0/24"]
+    create_nsg            = true
+    associate_route_table = true
+  }
+  pe = {
+    name                              = "snet-pe"
+    address_prefixes                  = ["10.120.3.0/24"]
+    create_nsg                        = true
+    associate_route_table             = true
+    private_endpoint_network_policies = "Disabled"
+  }
+  agent = {
+    name                  = "snet-agent"
+    address_prefixes      = ["10.120.4.0/24"]
+    create_nsg            = true
+    associate_route_table = true
+  }
+}
