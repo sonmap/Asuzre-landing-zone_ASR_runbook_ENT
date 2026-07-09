@@ -1,0 +1,42 @@
+dr_vm_mapping = {
+  db01 = {
+    source_vm_name = "db01"
+    role           = "db"
+    source_subnet  = "snet-db"
+    target_subnet  = "snet-db"
+    recovery_group = 1
+    create_by      = "ASR Failover"
+  }
+  was01 = {
+    source_vm_name = "was01"
+    role           = "was"
+    source_subnet  = "snet-was"
+    target_subnet  = "snet-was"
+    recovery_group = 2
+    create_by      = "ASR Failover"
+  }
+  was02 = {
+    source_vm_name = "was02"
+    role           = "was"
+    source_subnet  = "snet-was"
+    target_subnet  = "snet-was"
+    recovery_group = 2
+    create_by      = "ASR Failover"
+  }
+  web01 = {
+    source_vm_name = "web01"
+    role           = "web"
+    source_subnet  = "snet-web"
+    target_subnet  = "snet-web"
+    recovery_group = 3
+    create_by      = "ASR Failover"
+  }
+  web02 = {
+    source_vm_name = "web02"
+    role           = "web"
+    source_subnet  = "snet-web"
+    target_subnet  = "snet-web"
+    recovery_group = 3
+    create_by      = "ASR Failover"
+  }
+}
