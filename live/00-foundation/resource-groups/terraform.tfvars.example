@@ -1,0 +1,41 @@
+common_tags = {
+  project     = "azure-landing-zone-asr-runbook-ent"
+  environment = "dr"
+  owner       = "cloud-team"
+  managed_by  = "terraform"
+}
+
+resource_groups = {
+  dr_hub = {
+    name     = "rg-sl-dr-hub-jpe"
+    location = "japaneast"
+    tags = {
+      region_role = "dr"
+      workload    = "platform"
+    }
+  }
+  dr_sales_prod = {
+    name     = "rg-sl-sales-prod-dr-jpe"
+    location = "japaneast"
+    tags = {
+      region_role = "dr"
+      workload    = "sales"
+    }
+  }
+  dr_asr = {
+    name     = "rg-sl-dr-asr-jpe"
+    location = "japaneast"
+    tags = {
+      region_role = "dr"
+      workload    = "asr"
+    }
+  }
+  dr_automation = {
+    name     = "rg-sl-dr-automation-jpe"
+    location = "japaneast"
+    tags = {
+      region_role = "dr"
+      workload    = "automation"
+    }
+  }
+}
