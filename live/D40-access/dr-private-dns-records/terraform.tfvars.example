@@ -1,0 +1,21 @@
+dns_resource_group_name  = "rg-sl-dr-hub-jpe"
+private_dns_zone_name    = "corp.internal"
+create_private_dns_zone  = false
+
+common_tags = {
+  project     = "azure-landing-zone-asr-runbook-ent"
+  environment = "dr"
+  region_role = "dr"
+  workload    = "access"
+  managed_by  = "terraform"
+}
+
+# DR failover 전에는 비워두고, DR Drill 또는 운영 전환 정책에 따라 값을 넣는다.
+# 실제 DNS 전환은 Runbook으로 수행하는 것을 우선한다.
+a_records = {
+  # sales = {
+  #   name    = "sales"
+  #   ttl     = 60
+  #   records = ["10.120.0.10"]
+  # }
+}
