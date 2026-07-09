@@ -1,0 +1,31 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+
+# Local sensitive config
+backend.hcl
+terraform.tfvars
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Keys / secrets
+.ssh/
+*.pem
+*.key
+*.pfx
+*.kubeconfig
+*.env
+
+# Outputs / logs
+logs/
+inventory/output/
+*.zip
+*.tar.gz
+__pycache__/
+*.pyc
