@@ -1,0 +1,6 @@
+module "dr_resource_groups" {
+  source = "../../../modules/resource_group"
+
+  resource_groups = var.resource_groups
+  tags            = var.common_tags
+}
